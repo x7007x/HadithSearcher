@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>بحث في الأحاديث</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #fff);
+            color: var(--tg-theme-text-color, #000);
+            padding-bottom: 80px;
+        }
+
+        .header {
+            position: sticky;
+            top: 0;
+            background: var(--tg-theme-bg-color, #fff);
+            border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+            padding: 12px 16px;
+            z-index: 100;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--tg-theme-hint-color, #ccc);
+            border-radius: 12px;
+            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            color: var(--tg-theme-text-color, #000);
+            font-size: 16px;
+            outline: none;
+        }
+
+        .search-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            background: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #fff);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .search-btn:active {
+            opacity: 0.7;
+        }
+
+        .search-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 4px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .stats-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .stat-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 16px;
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-text-color, #000);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .stat-chip strong {
+            margin-left: 4px;
+            color: var(--tg-theme-link-color, #3390ec);
+        }
+
+        .content {
+            padding: 16px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--tg-theme-hint-color, #999);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--tg-theme-hint-color, #e0e0e0);
+            border-top-color: var(--tg-theme-button-color, #3390ec);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--tg-theme-hint-color, #999);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .hadith-card {
+            background: var(--tg-theme-secondary-bg-color, #f9f9f9);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid var(--tg-theme-hint-color, #e5e5e5);
+        }
+
+        .hadith-header {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+        }
+
+        .hadith-ref {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--tg-theme-link-color, #3390ec);
+            margin-bottom: 4px;
+        }
+
+        .hadith-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #999);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .narrator {
+            background: var(--tg-theme-bg-color, #fff);
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-style: italic;
+            border-right: 3px solid var(--tg-theme-button-color, #3390ec);
+        }
+
+        .arabic-text {
+            font-family: 'Traditional Arabic', 'Arabic Typesetting', 'Scheherazade', serif;
+            font-size: 20px;
+            line-height: 2;
+            text-align: right;
+            direction: rtl;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: var(--tg-theme-bg-color, #fff);
+            border-radius: 10px;
+        }
+
+        .english-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--tg-theme-text-color, #333);
+            text-align: left;
+            direction: ltr;
+            margin-bottom: 12px;
+        }
+
+        .grade-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .grade-sahih {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .grade-hasan {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .grade-daif {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .grade-other {
+            background: var(--tg-theme-hint-color, #e0e0e0);
+            color: var(--tg-theme-text-color, #333);
+        }
+
+        .references {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #777);
+        }
+
+        .ref-item {
+            margin-bottom: 4px;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px;
+            text-align: center;
+        }
+
+        .link {
+            color: var(--tg-theme-link-color, #3390ec);
+            text-decoration: none;
+        }
+
+        @media (max-width: 480px) {
+            .search-container {
+                flex-direction: column;
+            }
+
+            .search-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="search-container">
+            <input 
+                type="text" 
+                class="search-input" 
+                id="searchInput" 
+                placeholder="ابحث عن حديث... (مثال: نكاح، صلاة، زكاة)"
+                autocomplete="off"
+            >
+            <button class="search-btn" id="searchBtn">بحث</button>
+        </div>
+        <div class="stats-bar" id="statsBar"></div>
+    </div>
+
+    <div class="content" id="content">
+        <div class="empty-state">
+            <div class="empty-icon">📖</div>
+            <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">ابحث في الأحاديث النبوية</div>
+            <div style="font-size: 14px;">أدخل كلمة البحث للعثور على الأحاديث المتعلقة بها</div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            tg.enableClosingConfirmation();
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const content = document.getElementById('content');
+        const statsBar = document.getElementById('statsBar');
+
+        let currentData = null;
+
+        searchBtn.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+
+        async function performSearch() {
+            const query = searchInput.value.trim();
+            if (!query) {
+                tg?.showAlert('الرجاء إدخال كلمة البحث');
+                return;
+            }
+
+            showLoading();
+            searchBtn.disabled = true;
+            statsBar.innerHTML = '';
+
+            try {
+                const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+                
+                if (!response.ok) {
+                    throw new Error('فشل البحث');
+                }
+
+                const result = await response.json();
+                currentData = result;
+                
+                displayStats(result.stats);
+                displayResults(result.data);
+                
+                if (tg) {
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+            } catch (error) {
+                showError(error.message || 'حدث خطأ أثناء البحث');
+                if (tg) {
+                    tg.HapticFeedback.notificationOccurred('error');
+                }
+            } finally {
+                searchBtn.disabled = false;
+            }
+        }
+
+        function showLoading() {
+            content.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div>جارٍ البحث...</div>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            content.innerHTML = `
+                <div class="error">
+                    <strong>خطأ:</strong> ${message}
+                </div>
+            `;
+        }
+
+        function displayStats(stats) {
+            if (!stats || stats.total_hadiths === 0) {
+                statsBar.innerHTML = '';
+                return;
+            }
+
+            const chips = [
+                `<div class="stat-chip"><strong>${stats.total_hadiths}</strong> حديث</div>`
+            ];
+
+            const collections = Object.entries(stats.by_collection).slice(0, 3);
+            collections.forEach(([name, count]) => {
+                chips.push(`<div class="stat-chip">${name}: <strong>${count}</strong></div>`);
+            });
+
+            statsBar.innerHTML = chips.join('');
+        }
+
+        function displayResults(data) {
+            if (!data || data.length === 0) {
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🔍</div>
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">لا توجد نتائج</div>
+                        <div style="font-size: 14px;">جرب كلمات بحث مختلفة</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = data.map(hadith => createHadithCard(hadith)).join('');
+            content.innerHTML = html;
+        }
+
+        function createHadithCard(h) {
+            const gradeClass = getGradeClass(h.grade_english);
+            
+            return `
+                <div class="hadith-card">
+                    <div class="hadith-header">
+                        <div class="hadith-ref">${h.reference || 'مرجع غير متوفر'}</div>
+                        <div class="hadith-meta">
+                            ${h.collection ? `<div class="meta-item">📚 ${h.collection}</div>` : ''}
+                            ${h.book ? `<div class="meta-item">📖 ${h.book}</div>` : ''}
+                        </div>
+                    </div>
+
+                    ${h.narrator ? `
+                        <div class="narrator">
+                            رُوِيَ عن: ${h.narrator}
+                        </div>
+                    ` : ''}
+
+                    ${h.arabic_text ? `
+                        <div class="arabic-text">
+                            ${h.arabic_sanad ? `<div style="color: #666; margin-bottom: 12px;">${h.arabic_sanad}</div>` : ''}
+                            ${h.arabic_text}
+                        </div>
+                    ` : ''}
+
+                    ${h.english_text ? `
+                        <div class="english-text">
+                            ${h.english_text}
+                        </div>
+                    ` : ''}
+
+                    ${h.grade_english ? `
+                        <div class="grade-badge ${gradeClass}">
+                            ${h.grade_english}
+                        </div>
+                    ` : ''}
+
+                    <div class="references">
+                        ${h.in_book_reference ? `<div class="ref-item">المرجع في الكتاب: ${h.in_book_reference}</div>` : ''}
+                        ${h.usc_msa_reference ? `<div class="ref-item">USC-MSA: ${h.usc_msa_reference}</div>` : ''}
+                        ${h.hadith_url ? `<div class="ref-item"><a href="${h.hadith_url}" class="link" target="_blank">عرض في Sunnah.com ↗</a></div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getGradeClass(grade) {
+            if (!grade) return 'grade-other';
+            const lower = grade.toLowerCase();
+            if (lower.includes('sahih')) return 'grade-sahih';
+            if (lower.includes('hasan')) return 'grade-hasan';
+            if (lower.includes('daif') || lower.includes('weak')) return 'grade-daif';
+            return 'grade-other';
+        }
+
+        // Popular searches
+        const popularSearches = ['صلاة', 'صيام', 'زكاة', 'حج', 'نكاح'];
+        const randomSearch = popularSearches[Math.floor(Math.random() * popularSearches.length)];
+        searchInput.placeholder = `ابحث عن حديث... (مثال: ${randomSearch})`;
+    </script>
+</body>
+</html>
