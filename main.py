@@ -16,7 +16,7 @@ from typing import List, Dict, Tuple, Optional
 
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, render_template
 from flask_cors import CORS
 
 # ==========
@@ -272,7 +272,7 @@ scraper = SunnahScraper(delay_seconds=1.2)
 
 @app.get("/")
 def index():
-    return send_from_directory('static', 'index.html')
+    return render_template("index.html")
 
 @app.get("/search")
 def search():
