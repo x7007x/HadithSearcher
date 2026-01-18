@@ -1,301 +1,260 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>بحث في الأحاديث</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>بحث الأحاديث النبوية</title>
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--tg-theme-bg-color, #fff);
-            color: var(--tg-theme-text-color, #000);
-            padding-bottom: 80px;
+            background: var(--tg-theme-bg-color, #f5f5f7);
+            color: var(--tg-theme-text-color, #000000);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        .header {
-            position: sticky;
-            top: 0;
-            background: var(--tg-theme-bg-color, #fff);
-            border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-            padding: 12px 16px;
-            z-index: 100;
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
         }
 
-        .search-container {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
+        .dark .glass-effect {
+            background: rgba(28, 28, 30, 0.7);
         }
 
-        .search-input {
-            flex: 1;
-            padding: 12px 16px;
-            border: 1px solid var(--tg-theme-hint-color, #ccc);
-            border-radius: 12px;
-            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
-            color: var(--tg-theme-text-color, #000);
-            font-size: 16px;
-            outline: none;
+        .card-shadow {
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
         }
 
-        .search-btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 12px;
-            background: var(--tg-theme-button-color, #3390ec);
-            color: var(--tg-theme-button-text-color, #fff);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
+        .dark .card-shadow {
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
         }
 
-        .search-btn:active {
-            opacity: 0.7;
+        .search-shadow {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
         }
 
-        .search-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .dark .search-shadow {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
 
-        .stats-bar {
-            display: flex;
-            gap: 12px;
-            overflow-x: auto;
-            padding: 4px 0;
-            -webkit-overflow-scrolling: touch;
+        .animate-slide-up {
+            animation: slideUp 0.4s ease-out;
         }
 
-        .stats-bar::-webkit-scrollbar {
-            display: none;
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
         }
 
-        .stat-chip {
-            display: inline-flex;
-            align-items: center;
-            padding: 6px 12px;
-            border-radius: 16px;
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            color: var(--tg-theme-text-color, #000);
-            font-size: 13px;
-            white-space: nowrap;
-        }
-
-        .stat-chip strong {
-            margin-left: 4px;
-            color: var(--tg-theme-link-color, #3390ec);
-        }
-
-        .content {
-            padding: 16px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--tg-theme-hint-color, #999);
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--tg-theme-hint-color, #e0e0e0);
-            border-top-color: var(--tg-theme-button-color, #3390ec);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 12px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--tg-theme-hint-color, #999);
-        }
-
-        .empty-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-
-        .hadith-card {
-            background: var(--tg-theme-secondary-bg-color, #f9f9f9);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
-            border: 1px solid var(--tg-theme-hint-color, #e5e5e5);
-        }
-
-        .hadith-header {
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-        }
-
-        .hadith-ref {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--tg-theme-link-color, #3390ec);
-            margin-bottom: 4px;
-        }
-
-        .hadith-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            font-size: 12px;
-            color: var(--tg-theme-hint-color, #999);
-        }
-
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .narrator {
-            background: var(--tg-theme-bg-color, #fff);
-            padding: 10px 12px;
-            border-radius: 10px;
-            margin-bottom: 12px;
-            font-size: 14px;
-            font-style: italic;
-            border-right: 3px solid var(--tg-theme-button-color, #3390ec);
+        .skeleton {
+            background: linear-gradient(90deg, rgba(0,0,0,0.06) 25%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.06) 75%);
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite;
         }
 
         .arabic-text {
-            font-family: 'Traditional Arabic', 'Arabic Typesetting', 'Scheherazade', serif;
-            font-size: 20px;
-            line-height: 2;
-            text-align: right;
-            direction: rtl;
-            margin-bottom: 16px;
-            padding: 12px;
-            background: var(--tg-theme-bg-color, #fff);
-            border-radius: 10px;
+            font-family: 'Amiri', serif;
+            line-height: 2.2;
+            text-align: justify;
         }
 
-        .english-text {
-            font-size: 15px;
-            line-height: 1.6;
-            color: var(--tg-theme-text-color, #333);
-            text-align: left;
-            direction: ltr;
-            margin-bottom: 12px;
+        .badge-sahih { 
+            background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+            color: white;
         }
 
-        .grade-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-top: 8px;
+        .badge-hasan { 
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
         }
 
-        .grade-sahih {
-            background: #d4edda;
-            color: #155724;
+        .badge-daif { 
+            background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+            color: white;
         }
 
-        .grade-hasan {
-            background: #fff3cd;
-            color: #856404;
+        .badge-other { 
+            background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+            color: white;
         }
 
-        .grade-daif {
-            background: #f8d7da;
-            color: #721c24;
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { 
+            background: var(--tg-theme-hint-color, #c7c7cc); 
+            border-radius: 10px; 
         }
 
-        .grade-other {
-            background: var(--tg-theme-hint-color, #e0e0e0);
-            color: var(--tg-theme-text-color, #333);
-        }
-
-        .references {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-            font-size: 12px;
-            color: var(--tg-theme-hint-color, #777);
-        }
-
-        .ref-item {
-            margin-bottom: 4px;
-        }
-
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 16px;
-            border-radius: 12px;
-            margin: 16px;
-            text-align: center;
-        }
-
-        .link {
-            color: var(--tg-theme-link-color, #3390ec);
-            text-decoration: none;
-        }
-
-        @media (max-width: 480px) {
-            .search-container {
-                flex-direction: column;
-            }
-
-            .search-btn {
-                width: 100%;
-            }
+        .smooth-scroll {
+            scroll-behavior: smooth;
         }
     </style>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"IBM Plex Sans Arabic"', '"Inter"', 'system-ui', 'sans-serif'],
+                        arabic: ['"Amiri"', 'serif'],
+                        title: ['"Reem Kufi"', 'sans-serif'],
+                    },
+                    colors: {
+                        tg: {
+                            bg: 'var(--tg-theme-bg-color, #f5f5f7)',
+                            text: 'var(--tg-theme-text-color, #000000)',
+                            hint: 'var(--tg-theme-hint-color, #8e8e93)',
+                            link: 'var(--tg-theme-link-color, #007aff)',
+                            button: 'var(--tg-theme-button-color, #007aff)',
+                            buttonText: 'var(--tg-theme-button-text-color, #ffffff)',
+                            secondaryBg: 'var(--tg-theme-secondary-bg-color, #efeff4)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body>
-    <div class="header">
-        <div class="search-container">
-            <input 
-                type="text" 
-                class="search-input" 
-                id="searchInput" 
-                placeholder="ابحث عن حديث... (مثال: نكاح، صلاة، زكاة)"
-                autocomplete="off"
+<body class="antialiased min-h-screen smooth-scroll font-sans">
+
+    <!-- Header with Search -->
+    <div class="sticky top-0 z-50 glass-effect border-b border-tg-hint/10">
+        <div class="max-w-4xl mx-auto px-4 py-4">
+            <!-- Title -->
+            <div class="text-center mb-4">
+                <h1 class="text-2xl font-title font-bold text-tg-text mb-1">
+                    بحث الأحاديث النبوية
+                </h1>
+                <p class="text-xs text-tg-hint font-light">
+                    ابحث في مجموعات الحديث المعتمدة
+                </p>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="relative">
+                <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                    <svg class="w-5 h-5 text-tg-hint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <input 
+                    type="text" 
+                    id="searchInput"
+                    placeholder="ابحث عن حديث... (صلاة، صيام، زكاة)"
+                    class="w-full py-3.5 pr-11 pl-4 bg-tg-secondaryBg/60 border border-tg-hint/20 rounded-2xl text-tg-text placeholder-tg-hint/50 focus:outline-none focus:ring-2 focus:ring-tg-link/30 focus:border-tg-link/50 transition-all duration-200 text-base"
+                />
+            </div>
+
+            <!-- Search Button -->
+            <button 
+                id="searchBtn"
+                class="w-full mt-3 py-3.5 bg-gradient-to-r from-tg-button to-tg-link text-white rounded-2xl font-semibold text-base active:scale-[0.98] transition-transform duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-            <button class="search-btn" id="searchBtn">بحث</button>
+                <span id="searchBtnText">بحث</span>
+                <span id="searchBtnLoading" class="hidden">
+                    <svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </span>
+            </button>
+
+            <!-- Stats Bar -->
+            <div id="statsBar" class="hidden mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-hide"></div>
         </div>
-        <div class="stats-bar" id="statsBar"></div>
     </div>
 
-    <div class="content" id="content">
-        <div class="empty-state">
-            <div class="empty-icon">📖</div>
-            <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">ابحث في الأحاديث النبوية</div>
-            <div style="font-size: 14px;">أدخل كلمة البحث للعثور على الأحاديث المتعلقة بها</div>
+    <!-- Main Content -->
+    <div id="content" class="max-w-4xl mx-auto px-4 py-6 pb-24">
+        <!-- Welcome State -->
+        <div id="welcomeState" class="text-center py-20 animate-fade-in">
+            <div class="mb-6">
+                <div class="w-20 h-20 mx-auto bg-gradient-to-br from-tg-link/20 to-tg-button/20 rounded-3xl flex items-center justify-center mb-4">
+                    <svg class="w-10 h-10 text-tg-link" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-title font-bold text-tg-text mb-2">
+                    مرحباً بك في بحث الأحاديث
+                </h2>
+                <p class="text-tg-hint text-sm max-w-md mx-auto leading-relaxed">
+                    ابحث في مجموعات الحديث الشريف واعثر على الأحاديث النبوية بسهولة
+                </p>
+            </div>
+
+            <!-- Quick Search Suggestions -->
+            <div class="flex flex-wrap gap-2 justify-center max-w-md mx-auto">
+                <button onclick="quickSearch('صلاة')" class="px-4 py-2 bg-tg-secondaryBg rounded-full text-sm text-tg-text hover:bg-tg-hint/10 transition-colors">
+                    صلاة 🤲
+                </button>
+                <button onclick="quickSearch('صيام')" class="px-4 py-2 bg-tg-secondaryBg rounded-full text-sm text-tg-text hover:bg-tg-hint/10 transition-colors">
+                    صيام 🌙
+                </button>
+                <button onclick="quickSearch('زكاة')" class="px-4 py-2 bg-tg-secondaryBg rounded-full text-sm text-tg-text hover:bg-tg-hint/10 transition-colors">
+                    زكاة 💰
+                </button>
+                <button onclick="quickSearch('حج')" class="px-4 py-2 bg-tg-secondaryBg rounded-full text-sm text-tg-text hover:bg-tg-hint/10 transition-colors">
+                    حج 🕋
+                </button>
+            </div>
         </div>
+
+        <!-- Results Container -->
+        <div id="resultsContainer" class="hidden"></div>
     </div>
 
     <script>
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-            tg.ready();
-            tg.expand();
-            tg.enableClosingConfirmation();
+        const webApp = window.Telegram?.WebApp;
+        if (webApp) {
+            webApp.ready();
+            webApp.expand();
+            webApp.enableClosingConfirmation();
+            
+            if (parseFloat(webApp.version) >= 8.0) {
+                try { webApp.requestFullscreen(); } catch(e) {}
+            }
         }
 
+        const API_BASE = window.location.origin;
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
+        const searchBtnText = document.getElementById('searchBtnText');
+        const searchBtnLoading = document.getElementById('searchBtnLoading');
         const content = document.getElementById('content');
         const statsBar = document.getElementById('statsBar');
+        const welcomeState = document.getElementById('welcomeState');
+        const resultsContainer = document.getElementById('resultsContainer');
 
         let currentData = null;
 
@@ -304,23 +263,24 @@
             if (e.key === 'Enter') performSearch();
         });
 
+        function quickSearch(term) {
+            searchInput.value = term;
+            performSearch();
+        }
+
         async function performSearch() {
             const query = searchInput.value.trim();
             if (!query) {
-                tg?.showAlert('الرجاء إدخال كلمة البحث');
+                if (webApp) webApp.showAlert('الرجاء إدخال كلمة البحث');
                 return;
             }
 
             showLoading();
-            searchBtn.disabled = true;
-            statsBar.innerHTML = '';
-
+            
             try {
-                const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+                const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
                 
-                if (!response.ok) {
-                    throw new Error('فشل البحث');
-                }
+                if (!response.ok) throw new Error('فشل البحث');
 
                 const result = await response.json();
                 currentData = result;
@@ -328,49 +288,79 @@
                 displayStats(result.stats);
                 displayResults(result.data);
                 
-                if (tg) {
-                    tg.HapticFeedback.notificationOccurred('success');
-                }
+                if (webApp) webApp.HapticFeedback.notificationOccurred('success');
             } catch (error) {
                 showError(error.message || 'حدث خطأ أثناء البحث');
-                if (tg) {
-                    tg.HapticFeedback.notificationOccurred('error');
-                }
+                if (webApp) webApp.HapticFeedback.notificationOccurred('error');
             } finally {
-                searchBtn.disabled = false;
+                hideLoading();
             }
         }
 
         function showLoading() {
-            content.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <div>جارٍ البحث...</div>
+            searchBtn.disabled = true;
+            searchBtnText.classList.add('hidden');
+            searchBtnLoading.classList.remove('hidden');
+            welcomeState.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+            
+            resultsContainer.innerHTML = `
+                <div class="space-y-4">
+                    ${[1,2,3].map(() => `
+                        <div class="bg-white dark:bg-gray-800 rounded-3xl p-6 card-shadow">
+                            <div class="skeleton h-5 w-3/4 rounded mb-4"></div>
+                            <div class="skeleton h-4 w-full rounded mb-2"></div>
+                            <div class="skeleton h-4 w-full rounded mb-2"></div>
+                            <div class="skeleton h-4 w-2/3 rounded"></div>
+                        </div>
+                    `).join('')}
                 </div>
             `;
         }
 
+        function hideLoading() {
+            searchBtn.disabled = false;
+            searchBtnText.classList.remove('hidden');
+            searchBtnLoading.classList.add('hidden');
+        }
+
         function showError(message) {
-            content.innerHTML = `
-                <div class="error">
-                    <strong>خطأ:</strong> ${message}
+            resultsContainer.classList.remove('hidden');
+            welcomeState.classList.add('hidden');
+            
+            resultsContainer.innerHTML = `
+                <div class="text-center py-16 animate-slide-up">
+                    <div class="w-16 h-16 mx-auto bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-tg-text mb-2">حدث خطأ</h3>
+                    <p class="text-tg-hint text-sm">${message}</p>
                 </div>
             `;
         }
 
         function displayStats(stats) {
             if (!stats || stats.total_hadiths === 0) {
-                statsBar.innerHTML = '';
+                statsBar.classList.add('hidden');
                 return;
             }
 
+            statsBar.classList.remove('hidden');
+            
             const chips = [
-                `<div class="stat-chip"><strong>${stats.total_hadiths}</strong> حديث</div>`
+                `<div class="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-tg-link to-tg-button text-white rounded-full text-sm font-semibold">
+                    ${stats.total_hadiths} حديث
+                </div>`
             ];
 
-            const collections = Object.entries(stats.by_collection).slice(0, 3);
-            collections.forEach(([name, count]) => {
-                chips.push(`<div class="stat-chip">${name}: <strong>${count}</strong></div>`);
+            Object.entries(stats.by_collection).slice(0, 3).forEach(([name, count]) => {
+                chips.push(`
+                    <div class="flex-shrink-0 px-4 py-2 bg-tg-secondaryBg rounded-full text-sm text-tg-text">
+                        ${name}: <span class="font-semibold">${count}</span>
+                    </div>
+                `);
             });
 
             statsBar.innerHTML = chips.join('');
@@ -378,80 +368,141 @@
 
         function displayResults(data) {
             if (!data || data.length === 0) {
-                content.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">🔍</div>
-                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">لا توجد نتائج</div>
-                        <div style="font-size: 14px;">جرب كلمات بحث مختلفة</div>
+                resultsContainer.classList.remove('hidden');
+                welcomeState.classList.add('hidden');
+                
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-20 animate-slide-up">
+                        <div class="w-20 h-20 mx-auto bg-tg-secondaryBg rounded-full flex items-center justify-center mb-4">
+                            <svg class="w-10 h-10 text-tg-hint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-tg-text mb-2">لا توجد نتائج</h3>
+                        <p class="text-tg-hint text-sm">جرب كلمات بحث مختلفة</p>
                     </div>
                 `;
                 return;
             }
 
-            const html = data.map(hadith => createHadithCard(hadith)).join('');
-            content.innerHTML = html;
+            welcomeState.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+            
+            const html = data.map((h, index) => createHadithCard(h, index)).join('');
+            resultsContainer.innerHTML = `<div class="space-y-4">${html}</div>`;
         }
 
-        function createHadithCard(h) {
+        function createHadithCard(h, index) {
             const gradeClass = getGradeClass(h.grade_english);
+            const delay = Math.min(index * 50, 300);
             
             return `
-                <div class="hadith-card">
-                    <div class="hadith-header">
-                        <div class="hadith-ref">${h.reference || 'مرجع غير متوفر'}</div>
-                        <div class="hadith-meta">
-                            ${h.collection ? `<div class="meta-item">📚 ${h.collection}</div>` : ''}
-                            ${h.book ? `<div class="meta-item">📖 ${h.book}</div>` : ''}
+                <div class="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden card-shadow animate-slide-up" style="animation-delay: ${delay}ms">
+                    <!-- Header -->
+                    <div class="p-5 pb-4 border-b border-gray-100 dark:border-gray-700">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <h3 class="text-base font-bold text-tg-link flex-1">
+                                ${h.reference || 'مرجع غير متوفر'}
+                            </h3>
+                            ${h.grade_english ? `
+                                <span class="badge-${gradeClass} px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0">
+                                    ${h.grade_english}
+                                </span>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-2 text-xs">
+                            ${h.collection ? `
+                                <span class="px-3 py-1.5 bg-tg-secondaryBg rounded-full text-tg-text font-medium">
+                                    📚 ${h.collection}
+                                </span>
+                            ` : ''}
+                            ${h.book ? `
+                                <span class="px-3 py-1.5 bg-tg-secondaryBg rounded-full text-tg-text font-medium">
+                                    📖 ${h.book}
+                                </span>
+                            ` : ''}
                         </div>
                     </div>
 
-                    ${h.narrator ? `
-                        <div class="narrator">
-                            رُوِيَ عن: ${h.narrator}
-                        </div>
-                    ` : ''}
+                    <!-- Content -->
+                    <div class="p-5">
+                        ${h.narrator ? `
+                            <div class="mb-4 p-4 bg-gradient-to-r from-tg-link/5 to-transparent rounded-2xl border-r-4 border-tg-link">
+                                <p class="text-sm text-tg-text">
+                                    <span class="font-semibold">رُوِيَ عن:</span> ${h.narrator}
+                                </p>
+                            </div>
+                        ` : ''}
 
-                    ${h.arabic_text ? `
-                        <div class="arabic-text">
-                            ${h.arabic_sanad ? `<div style="color: #666; margin-bottom: 12px;">${h.arabic_sanad}</div>` : ''}
-                            ${h.arabic_text}
-                        </div>
-                    ` : ''}
+                        ${h.arabic_text ? `
+                            <div class="mb-5 p-5 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-900 dark:to-gray-800 rounded-2xl">
+                                ${h.arabic_sanad ? `
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 font-arabic leading-relaxed">
+                                        ${h.arabic_sanad}
+                                    </p>
+                                ` : ''}
+                                <p class="text-xl font-arabic leading-loose text-gray-900 dark:text-gray-100 arabic-text">
+                                    ${h.arabic_text}
+                                </p>
+                            </div>
+                        ` : ''}
 
-                    ${h.english_text ? `
-                        <div class="english-text">
-                            ${h.english_text}
-                        </div>
-                    ` : ''}
+                        ${h.english_text ? `
+                            <div class="mb-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl">
+                                <p class="text-sm leading-relaxed text-gray-700 dark:text-gray-300 text-left" dir="ltr">
+                                    ${h.english_text}
+                                </p>
+                            </div>
+                        ` : ''}
 
-                    ${h.grade_english ? `
-                        <div class="grade-badge ${gradeClass}">
-                            ${h.grade_english}
+                        <!-- References -->
+                        <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
+                            ${h.in_book_reference ? `
+                                <p class="text-xs text-tg-hint">
+                                    📑 المرجع في الكتاب: <span class="text-tg-text">${h.in_book_reference}</span>
+                                </p>
+                            ` : ''}
+                            ${h.usc_msa_reference ? `
+                                <p class="text-xs text-tg-hint">
+                                    🔖 USC-MSA: <span class="text-tg-text">${h.usc_msa_reference}</span>
+                                </p>
+                            ` : ''}
+                            ${h.hadith_url ? `
+                                <a href="${h.hadith_url}" target="_blank" class="inline-flex items-center gap-1 text-xs text-tg-link font-medium hover:underline">
+                                    عرض في Sunnah.com
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                    </svg>
+                                </a>
+                            ` : ''}
                         </div>
-                    ` : ''}
-
-                    <div class="references">
-                        ${h.in_book_reference ? `<div class="ref-item">المرجع في الكتاب: ${h.in_book_reference}</div>` : ''}
-                        ${h.usc_msa_reference ? `<div class="ref-item">USC-MSA: ${h.usc_msa_reference}</div>` : ''}
-                        ${h.hadith_url ? `<div class="ref-item"><a href="${h.hadith_url}" class="link" target="_blank">عرض في Sunnah.com ↗</a></div>` : ''}
                     </div>
                 </div>
             `;
         }
 
         function getGradeClass(grade) {
-            if (!grade) return 'grade-other';
+            if (!grade) return 'other';
             const lower = grade.toLowerCase();
-            if (lower.includes('sahih')) return 'grade-sahih';
-            if (lower.includes('hasan')) return 'grade-hasan';
-            if (lower.includes('daif') || lower.includes('weak')) return 'grade-daif';
-            return 'grade-other';
+            if (lower.includes('sahih')) return 'sahih';
+            if (lower.includes('hasan')) return 'hasan';
+            if (lower.includes('daif') || lower.includes('weak')) return 'daif';
+            return 'other';
         }
 
-        // Popular searches
-        const popularSearches = ['صلاة', 'صيام', 'زكاة', 'حج', 'نكاح'];
-        const randomSearch = popularSearches[Math.floor(Math.random() * popularSearches.length)];
-        searchInput.placeholder = `ابحث عن حديث... (مثال: ${randomSearch})`;
+        // Theme detection
+        if (webApp?.colorScheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        }
+
+        webApp?.onEvent('themeChanged', () => {
+            if (webApp.colorScheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
     </script>
 </body>
 </html>
