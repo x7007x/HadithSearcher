@@ -1,4 +1,3 @@
 flask
-re
 requests
-bs4
+beautifulsoup4
