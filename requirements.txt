@@ -1,0 +1,4 @@
+flask
+re
+requests
+bs4
