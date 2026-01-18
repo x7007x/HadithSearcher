@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-Sunnah.com Scraper - Flask API + HTML Index (Single File)
+Sunnah.com Scraper - Flask API + Telegram WebApp UI
 
 Run:
-  pip install flask requests beautifulsoup4
+  pip install flask requests beautifulsoup4 flask-cors
   python app.py
 
 Use:
   http://127.0.0.1:5000/
-  http://127.0.0.1:5000/search?q=نكاح
 """
 
 import re
@@ -17,7 +16,8 @@ from typing import List, Dict, Tuple, Optional
 
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 
 # ==========
 
@@ -95,7 +95,7 @@ class SunnahScraper:
             "english_translation_reference": None,
             "usc_msa_reference": None,
             "is_deprecated_numbering": False,
-            "page_scraped": None,  # داخليًا فقط
+            "page_scraped": None,
         }
 
         urn_comment = hadith_container.find(string=re.compile(r"URN \[en\] \d+"))
@@ -266,66 +266,13 @@ def build_stats(data: List[Dict]) -> Dict:
 
 # ==========
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
+CORS(app)
 scraper = SunnahScraper(delay_seconds=1.2)
 
 @app.get("/")
 def index():
-    html = """<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sunnah Search</title>
-  <style>
-    body{font-family:system-ui,Arial; margin:24px; line-height:1.4}
-    .row{display:flex; gap:8px; flex-wrap:wrap}
-    input{padding:10px 12px; min-width:260px; flex:1; border:1px solid #ddd; border-radius:10px}
-    button{padding:10px 14px; border:0; border-radius:10px; cursor:pointer}
-    .card{border:1px solid #eee; border-radius:14px; padding:14px; margin-top:12px}
-    .muted{color:#666; font-size:13px}
-    pre{white-space:pre-wrap; word-break:break-word; background:#fafafa; padding:12px; border-radius:12px; border:1px solid #eee; overflow:auto}
-    a{color:inherit}
-  </style>
-</head>
-<body>
-  <h2>بحث في الأحاديث (Sunnah.com)</h2>
-
-  <div class="row">
-    <input id="q" placeholder="اكتب كلمة البحث... مثال: نكاح" />
-    <button id="btn">بحث</button>
-  </div>
-
-  <div class="card">
-    <div class="muted">النتائج (JSON):</div>
-    <pre id="out">{}</pre>
-  </div>
-
-<script>
-const qEl = document.getElementById('q');
-const out = document.getElementById('out');
-document.getElementById('btn').addEventListener('click', run);
-
-qEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
-
-async function run(){
-  const q = qEl.value.trim();
-  if(!q){ out.textContent = "اكتب كلمة البحث أولاً."; return; }
-
-  out.textContent = "جارٍ البحث...";
-  try{
-    const res = await fetch('/search?q=' + encodeURIComponent(q));
-    const data = await res.json();
-    out.textContent = JSON.stringify(data, null, 2);
-  } catch (e){
-    out.textContent = "حدث خطأ: " + (e?.message || e);
-  }
-}
-</script>
-</body>
-</html>"""
-    return Response(html, mimetype="text/html; charset=utf-8")
-
+    return send_from_directory('static', 'index.html')
 
 @app.get("/search")
 def search():
@@ -357,4 +304,6 @@ def search():
 # ==========
 
 if __name__ == "__main__":
+    import os
+    os.makedirs('static', exist_ok=True)
     app.run(host="0.0.0.0", port=5000, debug=True)
